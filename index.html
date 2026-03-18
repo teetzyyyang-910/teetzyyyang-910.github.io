@@ -1268,15 +1268,35 @@
 
 <script>
   function copyEmail(e) {
+    e.preventDefault(); // stop mailto from navigating away immediately
     const email = 'teetzyyyang@gmail.com';
-    // Try to open mail app first; also copy to clipboard as fallback
-    navigator.clipboard.writeText(email).then(() => {
-      showToast();
-    }).catch(() => {
-      // clipboard failed, still show toast
-      showToast();
-    });
-    // Don't prevent default - still try to open mail app
+
+    // Show toast immediately (synchronous)
+    showToast();
+
+    // Copy to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(email).catch(() => {
+        // fallback: execCommand
+        fallbackCopy(email);
+      });
+    } else {
+      fallbackCopy(email);
+    }
+
+    // Open mail app after a short delay so toast is visible first
+    setTimeout(() => { window.location.href = 'mailto:' + email; }, 400);
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
   }
 
   function showToast() {
