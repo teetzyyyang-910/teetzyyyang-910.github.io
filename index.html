@@ -891,6 +891,31 @@
     .running-block { grid-column: 1; grid-template-columns: 1fr; }
     .running-photo-wrap { height: 260px; }
   }
+
+  /* ── Copy email toast ── */
+  .copy-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--accent);
+    color: #0d0d0d;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 12px 24px;
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 99999;
+    white-space: nowrap;
+  }
+  .copy-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -1268,45 +1293,31 @@
 
 <script>
   function copyEmail(e) {
-    e.preventDefault(); // stop mailto from navigating away immediately
+    e.preventDefault();
     const email = 'teetzyyyang@gmail.com';
+    const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
 
-    // Show toast immediately (synchronous)
-    showToast();
-
-    // Copy to clipboard
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(email).catch(() => {
-        // fallback: execCommand
-        fallbackCopy(email);
-      });
-    } else {
-      fallbackCopy(email);
-    }
-
-    // Open mail app after a short delay so toast is visible first
-    setTimeout(() => { window.location.href = 'mailto:' + email; }, 400);
-  }
-
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    document.body.removeChild(ta);
-  }
-
-  function showToast() {
-    const lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+    // 1. Show toast right away
     const toast = document.getElementById('copyToast');
-    toast.textContent = lang === 'zh'
-      ? '✓ Email 已複製到剪貼簿'
-      : '✓ Email copied to clipboard';
+    toast.textContent = lang === 'zh' ? '✓ Email 已複製到剪貼簿' : '✓ Email copied to clipboard';
+    toast.classList.remove('show');
+    // force reflow so transition fires even if called twice quickly
+    void toast.offsetWidth;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2800);
+
+    // 2. Copy to clipboard
+    const ta = document.createElement('textarea');
+    ta.value = email;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch(err) {}
+    document.body.removeChild(ta);
+
+    // 3. Open mail app after brief delay
+    setTimeout(() => { window.location.href = 'mailto:' + email; }, 500);
   }
 </script>
 
